@@ -27,5 +27,5 @@ class ValueProgstate(multiconsensus.Progstate):
         self.value = value
 
     #TODO: do we need to do anything when value is actually decided??
-    def needsUpdate(self, value):
+    def needsExec(self, value):
         return True

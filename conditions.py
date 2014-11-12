@@ -14,8 +14,8 @@ def condition(pre_condition=None, post_condition=None):
         return wrapper
     return decorator
 
-def pre_condition(check):
+def precondition(check):
     return condition(pre_condition=check)
 
-def post_condition(check):
+def postcondition(check):
     return condition(post_condition=check)
