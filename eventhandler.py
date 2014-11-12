@@ -3,8 +3,6 @@ import Queue
 from multiconsensus import *
 
 class EventHandler(object):
-    handler_map = {'certify': certify_request, 'snapshot': snapshot_request}
-
     def __init__(self, consensus, network, certifics_chan, snapshots_chan):
         self.consensus = consensus
         self.certifics_chan = certifics_chan
@@ -12,10 +10,11 @@ class EventHandler(object):
         self.network = network
         self.certifics = set()
         self.snapshots = set()
+        self.handler_map = {'certify': self.certify_request, 'snapshot': self.snapshot_request}
         threading.Thread(target=self.chan_handler).start()
 
     def request(self, msg, item):
-        handler_map[msg](item)
+        return handler_map[msg](item)
 
     def client_request(self, value):
         # TODO: if not master, respond to client telling them who is
@@ -24,8 +23,13 @@ class EventHandler(object):
     def certify_request(self, (cert, rid, value)):
         if self.consensus.isSeq:
             self.certifics.add((cert, rid, value))
+            if self.consensus._roundMajority(self.certifics, value):
+                self.consensus.observeDecision(value)
+                resp = self.consensus.update(value)
+                print resp
         else:
-            self.consensus.certify(rid, value)
+            resp = self.consensus.certify(rid, value)
+            return resp
 
     def decide_request(self, value):
         self.consensus.observeDecision(value)
@@ -38,7 +42,11 @@ class EventHandler(object):
 
     def send_certify(self, item):
         if self.consensus.isSeq:
-            self.network.sendAll('certify', item)
+            # TODO: this is a relatively complex part of the app
+            # we need to wait for a majority synchronously, but then
+            # continue resending other requests async
+            resps = self.network.sendAll('certify', item)
+            map(lambda r: self.certify_request(r[1]), resps)
         else:
             self.network.send(self.consensus.proseq, 'certify', item)
 

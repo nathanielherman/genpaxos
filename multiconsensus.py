@@ -10,7 +10,7 @@ class ActiveRep(object):
     @precondition(lambda self, value: self.progstate.needsExec(value))
     def update(self, value):
         result = self.progstate.execute(value)
-        outputs.append(result)
+        return result
 
 
 class MultiConsensus(ActiveRep):
@@ -44,13 +44,13 @@ class MultiConsensus(ActiveRep):
 
     # network precondition: S is a subset of snapshot messages received and
     # only includes messages matching our rid and with us as proseq
-    @precondition(lambda self, rid, S: self.rid == rid and not self.isSeq and
+    @precondition(lambda self, rid, S: self.rid == rid and not self.isSeq and \
                   len(S) > self.n/2)
     def recover(self, rid, S):
         self.progstate.set(reduce(lambda ps1, ps2: ps1.consolidate(ps2), S))
         self.isSeq = True
 
-    @preconditon(lambda self, rid, value: self.isSeq and rid = self.rid
+    @precondition(lambda self, rid, value: self.isSeq and rid == self.rid \
                  #and value in inputs
                  and self.progstate.seq_certifiable(rid, value))
     def certifySeq(self, rid, value):
@@ -59,10 +59,11 @@ class MultiConsensus(ActiveRep):
 
     # network precondition: someone else has certified this command
     @precondition(lambda self, rid, value: 
-                  and self.rid = rid and self.progstate.certifiable(rid, value))
+                  self.rid == rid and self.progstate.certifiable(rid, value))
     def certify(self, rid, value):
         self.progstate.certify(rid, value)
-        self.certifics_chan.put((self.cert, rid, value))
+        return ('certify', (self.cert, rid, value))
+#        self.certifics_chan.put((self.cert, rid, value))
 
     def _roundMajority(self, certifics, value):
         cs = filter(lambda c: c[2] == value, certifics)
