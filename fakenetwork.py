@@ -8,12 +8,15 @@ class FakeNetwork(object):
 
     def sendAll(self, msg, item):
         resps = []
-        for node in self.config:
+        for node in xrange(len(self.config)):
+            if node == self.me.consensus.cert:
+                continue
             resp = self.send(node, msg, item)
             resps.append(resp)
         return resps
 
     def receive(self, msg, item):
+        print 'recv'
         resp = self.me.request(msg, item)
         return resp
 

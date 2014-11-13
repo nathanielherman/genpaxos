@@ -1,11 +1,9 @@
+from collections import defaultdict
 from conditions import precondition
 
 class ActiveRep(object):
     def __init__(self, progstate):
         self.progstate = progstate
-        self.version = 0
-        self.learned = defaultdict()
-        self.learned.default_factory = lambda: appState.emptyCommand()
 
     @precondition(lambda self, value: self.progstate.needsExec(value))
     def update(self, value):
@@ -54,6 +52,7 @@ class MultiConsensus(ActiveRep):
                  #and value in inputs
                  and self.progstate.seq_certifiable(rid, value))
     def certifySeq(self, rid, value):
+        print 'certseq'
         self.progstate.certify(rid, value)
         self.certifics_chan.put((self.cert, rid, value))
 
@@ -62,6 +61,7 @@ class MultiConsensus(ActiveRep):
                   self.rid == rid and self.progstate.certifiable(rid, value))
     def certify(self, rid, value):
         self.progstate.certify(rid, value)
+        print 'certify'
         return ('certify', (self.cert, rid, value))
 #        self.certifics_chan.put((self.cert, rid, value))
 

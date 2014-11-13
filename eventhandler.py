@@ -1,4 +1,5 @@
 import threading
+import time
 import Queue
 from multiconsensus import *
 
@@ -14,11 +15,12 @@ class EventHandler(object):
         threading.Thread(target=self.chan_handler).start()
 
     def request(self, msg, item):
-        return handler_map[msg](item)
+        return self.handler_map[msg](item)
 
     def client_request(self, value):
+        print 'run'
         # TODO: if not master, respond to client telling them who is
-        self.consensus.certifySeq(rid, value)
+        self.consensus.certifySeq(self.consensus.rid, value)
 
     def certify_request(self, (cert, rid, value)):
         if self.consensus.isSeq:
@@ -26,10 +28,14 @@ class EventHandler(object):
             if self.consensus._roundMajority(self.certifics, value):
                 self.consensus.observeDecision(value)
                 resp = self.consensus.update(value)
-                print resp
+                print 'resp: ', resp
         else:
             resp = self.consensus.certify(rid, value)
+            print 'client_resp', resp
             return resp
+
+    def snapshot_request(self, item):
+        print 'snapshot_Request'
 
     def decide_request(self, value):
         self.consensus.observeDecision(value)
@@ -60,6 +66,7 @@ class EventHandler(object):
         while 1:
             try:
                 item = chans[ind].get_nowait()
+                print 'got event'
                 chan_funcs[ind](item)
             except Queue.Empty:
                 if ind == len(chans)-1:

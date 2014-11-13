@@ -6,16 +6,19 @@ class RidCmd:
     def __init__(self, rid, cmd):
         self.rid = rid
         self.cmd = cmd
+    def __repr__(self):
+        return repr((self.rid, self.cmd))
+
+class Progsum(defaultdict):
+    def consolidate(self, ps2):
+        ret = self.copy()
+        for slot, val in ps2:
+            if val.rid > ret[slot].rid:
+                ret[slot] = val
+        return ret
+
 
 class LogProgstate(multiconsensus.Progstate):
-    class Progsum(defaultdict):
-        def consolidate(self, ps2):
-            ret = self.copy()
-            for slot, val in ps2:
-                if val.rid > ret[slot].rid:
-                    ret[slot] = val
-            return ret
-
     def __init__(self, appState, version=0):
         self.appState = appState
         self.version = version
@@ -27,9 +30,10 @@ class LogProgstate(multiconsensus.Progstate):
     def seq_certifiable(self, rid, value):
         # TODO: is this actually sufficient
         return self.progsum[value.slot].cmd.empty() and \
-            not self.progsum[value.slot - 1].cmd.empty()
+            (value.slot == 0 or not self.progsum[value.slot - 1].cmd.empty())
 
     def certifiable(self, rid, value):
+        print rid > self.progsum[value.slot].rid
         return rid > self.progsum[value.slot].rid
 
     def certify(self, rid, value):
