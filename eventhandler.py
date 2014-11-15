@@ -13,7 +13,7 @@ class EventHandler(object):
         self.snapshots = set()
         self.handler_map = {'certify': self.certify_request, 'certifyResponse': self.certify_response,
                             'snapshot': self.snapshot_request}
-        threading.Thread(target=self.chan_handler).start()
+        #threading.Thread(target=self.chan_handler).start()
 
     def request(self, (msg, item)):
         return self.handler_map[msg](item)
@@ -38,6 +38,7 @@ class EventHandler(object):
             resp = self.consensus.update(value)
             if resp:
                 print 'command result: ', resp
+                return True
 
     def certify_request(self, (cert, rid, value)):
             resp = self.consensus.certify(rid, value)
@@ -57,14 +58,8 @@ class EventHandler(object):
         pass
 
     def send_certify(self, item):
-        if self.consensus.isSeq:
-            # TODO: this is a relatively complex part of the app
-            # we need to wait for a majority synchronously, but then
-            # continue resending other requests async
-            resps = self.network.sendAll('certify', item)
-            map(lambda r: self.certify_request(r[1]), resps)
-        else:
-            self.network.send(self.consensus.proseq, 'certify', item)
+        assert 0
+        self.network.send(self.consensus.proseq, 'certify', item)
 
     def send_snapshot(self, item):
         self.network.send(item[2], 'snapshot', item)

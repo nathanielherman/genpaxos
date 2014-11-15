@@ -1,3 +1,4 @@
+from future import Future
 
 class FakeNetwork(object):
     # config should be an array of Network's indexed by their certifier id
@@ -9,17 +10,21 @@ class FakeNetwork(object):
     def sendAll(self, (msg, item), callback):
         resps = []
         replicas = range(len(self.config))
-        while len(replicas):
-            node = replicas.pop(0)
+        resps = map(lambda n: (n, self.send(n, msg, item)), replicas)
+        while len(resps):
+            node, future = resps.pop(0)
             if self.me.consensus.cert == node:
                 continue
             # TODO: these should get sent async
-            resp = self.send(node, msg, item)
+            resp = future.result()
             if resp:
-                callback(resp)
+                # they don't need these to be sent anymore (or, possibly,
+                # we could continue sending in the background)
+                if callback(resp):
+                    return
             else:
                 # keep trying
-                replicas.append(node)
+                resps.append((node, self.send(node, msg, item)))
 
     def receive(self, msg, item):
         print 'recv'
@@ -29,7 +34,6 @@ class FakeNetwork(object):
     # send does an actual network "send"
     def send(self, node, msg, item):
         # our fake network calls a node's network.receive() directly
-        resp = self.config[node].receive(msg, item)
         # retry if returns None?
         # how distinguish network failure and a replica saying fuck off
-        return resp
+        return Future(True, self.config[node].receive, msg, item)
