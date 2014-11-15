@@ -21,3 +21,5 @@ class LogDB(object):
     def execute(self, cmd):
         assert not cmd.empty()
         self.log.append(cmd)
+
+        return 'Success-' + repr(cmd)

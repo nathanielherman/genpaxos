@@ -11,27 +11,37 @@ class EventHandler(object):
         self.network = network
         self.certifics = set()
         self.snapshots = set()
-        self.handler_map = {'certify': self.certify_request, 'snapshot': self.snapshot_request}
+        self.handler_map = {'certify': self.certify_request, 'certifyResponse': self.certify_response,
+                            'snapshot': self.snapshot_request}
         threading.Thread(target=self.chan_handler).start()
 
-    def request(self, msg, item):
+    def request(self, (msg, item)):
         return self.handler_map[msg](item)
 
     def client_request(self, value):
         print 'run'
         # TODO: if not master, respond to client telling them who is
-        self.consensus.certifySeq(self.consensus.rid, value)
+        send = self.consensus.certifySeq(self.consensus.rid, value)
+        if send:
+            # we always certify our own commands 
+            # (TODO: should this be handled differently?)
+            # we could do this by sending ourself a pseudo-network request
+            # BUT this won't work right now because certifySeq adds this command
+            # to our progsum already... probably should be all or nothing
+            self.certifics.add((self.consensus.cert, self.consensus.rid, value))
+            self.network.sendAll(send, self.request)
 
-    def certify_request(self, (cert, rid, value)):
+    def certify_response(self, (cert, rid, value)):
         if self.consensus.isSeq:
             self.certifics.add((cert, rid, value))
-            if self.consensus._roundMajority(self.certifics, value):
-                self.consensus.observeDecision(value)
-                resp = self.consensus.update(value)
-                print 'resp: ', resp
-        else:
+            self.consensus.observeDecision(value, self.certifics)
+            resp = self.consensus.update(value)
+            if resp:
+                print 'command result: ', resp
+
+    def certify_request(self, (cert, rid, value)):
             resp = self.consensus.certify(rid, value)
-            print 'client_resp', resp
+            print 'cert_resp', resp
             return resp
 
     def snapshot_request(self, item):

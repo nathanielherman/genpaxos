@@ -6,18 +6,24 @@ class FakeNetwork(object):
         # our eventhandler
         self.me = me
 
-    def sendAll(self, msg, item):
+    def sendAll(self, (msg, item), callback):
         resps = []
-        for node in xrange(len(self.config)):
-            if node == self.me.consensus.cert:
+        replicas = range(len(self.config))
+        while len(replicas):
+            node = replicas.pop(0)
+            if self.me.consensus.cert == node:
                 continue
+            # TODO: these should get sent async
             resp = self.send(node, msg, item)
-            resps.append(resp)
-        return resps
+            if resp:
+                callback(resp)
+            else:
+                # keep trying
+                replicas.append(node)
 
     def receive(self, msg, item):
         print 'recv'
-        resp = self.me.request(msg, item)
+        resp = self.me.request((msg, item))
         return resp
 
     # send does an actual network "send"
@@ -25,4 +31,5 @@ class FakeNetwork(object):
         # our fake network calls a node's network.receive() directly
         resp = self.config[node].receive(msg, item)
         # retry if returns None?
+        # how distinguish network failure and a replica saying fuck off
         return resp

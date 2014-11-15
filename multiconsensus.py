@@ -54,7 +54,7 @@ class MultiConsensus(ActiveRep):
     def certifySeq(self, rid, value):
         print 'certseq'
         self.progstate.certify(rid, value)
-        self.certifics_chan.put((self.cert, rid, value))
+        return ('certify', (self.cert, rid, value))
 
     # network precondition: someone else has certified this command
     @precondition(lambda self, rid, value: 
@@ -62,45 +62,45 @@ class MultiConsensus(ActiveRep):
     def certify(self, rid, value):
         self.progstate.certify(rid, value)
         print 'certify'
-        return ('certify', (self.cert, rid, value))
+        return ('certifyResponse', (self.cert, rid, value))
 #        self.certifics_chan.put((self.cert, rid, value))
 
-    def _roundMajority(self, certifics, value):
+    # returns how many certifiers (in a single given round) support this particular value
+    # (I guess this is a Raft-like definition)
+    def _roundSupport(self, certifics, value):
+        # filter to only certifications of this particular value
         cs = filter(lambda c: c[2] == value, certifics)
         dict = defaultdict(lambda: 0)
         for (_, rid, _) in cs:
             dict[rid] += 1
         return max(dict.values())
 
-    # network precondition: a majority of nodes have certified this command
-    @precondition(lambda self, value: True)
-    def observeDecision(self, value):
+    # network precondition: a majority of nodes have certified this command.
+    # we know this either because: we're the master and we actually hear back
+    # from a majority, OR we're a follower and the master told us a majority
+    # had certified the command
+    @precondition(lambda self, value, certifics=None, leaderDecided=False: 
+                  leaderDecided or 
+                  (certifics and self._roundSupport(certifics, value) > self.n/2))
+    def observeDecision(self, value, certifics=None, leaderDecided=False):
         self.progstate.learn(value)
 
 class Progstate:
     def consolidate(self, progstate2):
         pass
-
     def set(self, new_progstate):
         self = new_progstate
-
     def seq_certifiable(self, rid, value):
         pass
-
     def certifiable(self, rid, value):
         pass
-
     def certify(self, rid, value):
         pass
-
     def sendable(self):
         return self
-
     def learn(self, value):
         pass
-
     def execute(self, value):
         return value
-
     def needsExec(self, value):
         return False

@@ -33,7 +33,7 @@ class LogProgstate(multiconsensus.Progstate):
             (value.slot == 0 or not self.progsum[value.slot - 1].cmd.empty())
 
     def certifiable(self, rid, value):
-        print rid > self.progsum[value.slot].rid
+        print 'certifiable', rid > self.progsum[value.slot].rid
         return rid > self.progsum[value.slot].rid
 
     def certify(self, rid, value):
