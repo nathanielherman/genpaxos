@@ -12,7 +12,7 @@ class EventHandler(object):
         self.certifics = set()
         self.snapshots = set()
         self.handler_map = {'certify': self.certify_request, 'certifyResponse': self.certify_response,
-                            'snapshot': self.snapshot_request}
+                            'snapshot': self.snapshot_request, 'supportRound': self.supportRound_request}
         #threading.Thread(target=self.chan_handler).start()
 
     def request(self, (msg, item)):
@@ -46,16 +46,25 @@ class EventHandler(object):
             return resp
 
     def snapshot_request(self, item):
-        print 'snapshot_Request'
+        (cert, rid, proseq, state) = item
+        self.snapshots.add(item)
+        self.consensus.recover(rid, self.snapshots)
+        if self.consensus.isSeq:
+            print self.consensus.cert, ' became master'
 
     def decide_request(self, value):
         self.consensus.observeDecision(value)
 
-    def supportRound_request(self, rid, proseq):
-        self.consensus.supportRound(rid, proseq)
+    def supportRound_request(self, (rid, proseq)):
+        resp = self.consensus.supportRound(rid, proseq)
+        return resp
 
     def timeout(self):
-        pass
+        new_rid = ((self.consensus.rid+1) << 8) | self.consensus.cert
+        our_resp = self.consensus.supportRound(new_rid, self.consensus.cert)
+        assert our_resp
+        self.snapshots.add(our_resp[1])
+        self.network.sendAll(('supportRound', (new_rid, self.consensus.cert)), self.request)
 
     def send_certify(self, item):
         assert 0

@@ -17,6 +17,9 @@ class Progsum(defaultdict):
                 ret[slot] = val
         return ret
 
+    def __hash__(self):
+        return 0
+
 
 class LogProgstate(multiconsensus.Progstate):
     def __init__(self, appState, version=0):

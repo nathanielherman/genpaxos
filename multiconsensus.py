@@ -29,7 +29,7 @@ class MultiConsensus(ActiveRep):
         self.rid = rid
         self.isSeq = False
         self.proseq = proseq
-        self.snapshots_chan.put((self.cert, rid, proseq, self.progstate.sendable()))
+        return ('snapshot', (self.cert, rid, proseq, self.progstate.sendable()))
 
     def _subset(self, S, rid, cert, snapshots):
         # literal from the paper
@@ -40,12 +40,21 @@ class MultiConsensus(ActiveRep):
             Ssuper.add((sn[0], sn[3]))
         return S.issubset(Ssuper)
 
+    def _supporters(self, rid, cert, snapshots):
+        support = {}
+        for sn in snapshots:
+            if sn[1] != rid or sn[2] != cert:
+                continue
+            support[sn[0]] = sn[3]
+        return support.values()
+
     # network precondition: S is a subset of snapshot messages received and
     # only includes messages matching our rid and with us as proseq
-    @precondition(lambda self, rid, S: self.rid == rid and not self.isSeq and \
-                  len(S) > self.n/2)
-    def recover(self, rid, S):
-        self.progstate.set(reduce(lambda ps1, ps2: ps1.consolidate(ps2), S))
+    @precondition(lambda self, rid, snapshots: self.rid == rid and not self.isSeq and \
+                  len(self._supporters(rid, self.cert, snapshots)) > self.n/2)
+    def recover(self, rid, snapshots):
+        support = self._supporters(rid, self.cert, snapshots)
+        self.progstate.set(reduce(lambda ps1, ps2: ps1.consolidate(ps2), support))
         self.isSeq = True
 
     @precondition(lambda self, rid, value: self.isSeq and rid == self.rid \

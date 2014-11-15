@@ -15,7 +15,6 @@ class FakeNetwork(object):
             node, future = resps.pop(0)
             if self.me.consensus.cert == node:
                 continue
-            # TODO: these should get sent async
             resp = future.result()
             if resp:
                 # they don't need these to be sent anymore (or, possibly,

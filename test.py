@@ -12,10 +12,12 @@ import appstate
 import Queue
 
 N = 3
+START_MASTER = -1
 
 def initialize(consensus):
-    consensus.proseq = 0
-    consensus.isSeq = consensus.proseq == consensus.cert
+    if START_MASTER != -1:
+        consensus.proseq = START_MASTER
+        consensus.isSeq = consensus.proseq == consensus.cert
 
 class SlottedValue(object):
     def __init__(self, slot, cmd):
@@ -31,7 +33,7 @@ def main():
         snap_chan = Queue.Queue()
         progstate = logprogstate.LogProgstate(appstate.LogDB())
         consensus = multiconsensus.MultiConsensus(i, progstate, 
-                                                  1, N, cert_chan, snap_chan)
+                                                  1 if START_MASTER else 0, N, cert_chan, snap_chan)
         initialize(consensus)
         handler = eventhandler.EventHandler(consensus, None, cert_chan, snap_chan)
         net = fakenetwork.FakeNetwork(None, handler)
@@ -41,6 +43,8 @@ def main():
 
     for r in replicas:
         r.config = replicas
+
+    replicas[0].me.timeout()
 
     replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("foo")))
     replicas[0].me.client_request(SlottedValue(1, appstate.Cmd("bar")))
