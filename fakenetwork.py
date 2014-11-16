@@ -19,6 +19,7 @@ class FakeNetwork(object):
  #               print 'callback', callback(resp)
   #              continue
             if resp:
+                print 'node', self.me.consensus.cert, 'got response', resp
                 # they don't need these to be sent anymore (or, possibly,
                 # we could continue sending in the background)
                 if callback(resp):
@@ -38,4 +39,5 @@ class FakeNetwork(object):
         # our fake network calls a node's network.receive() directly
         # retry if returns None?
         # how distinguish network failure and a replica saying fuck off
+        print 'crashed', self.config[node].crashed
         return Future(False, self.config[node].receive, msg, item)

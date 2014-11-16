@@ -37,6 +37,11 @@ class LogProgstate(multiconsensus.Progstate):
         self.learned = defaultdict()
         self.learned.default_factory = lambda: appState.emptyCommand()
 
+    def __repr__(self):
+        return "appState: %s; version: %d; log: %s; learned: %s" \
+            % (repr(self.appState), self.version, repr(self.progsum), \
+                   repr(self.learned))
+
     def seq_certifiable(self, rid, value):
         # TODO: is this actually sufficient
         return self.progsum[value.slot].cmd.empty() and \
@@ -54,6 +59,14 @@ class LogProgstate(multiconsensus.Progstate):
 
     def learn(self, value):
         self.learned[value.slot] = value.cmd
+
+    def execableValues(self):
+        prev = None
+        next = self.learned.get(self.version, self.learned.default_factory())
+        while not next.empty() and next != prev:
+            yield SlottedValue(self.version, next)
+            prev = next
+            next = self.learned.get(self.version, self.learned.default_factory())
 
     def needsExec(self, value):
         return value.cmd == self.learned[self.version] \

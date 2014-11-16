@@ -2,7 +2,7 @@ class Cmd(object):
     def __init__(self, s=None):
         self.s = s
     def __repr__(self):
-        return repr(self.s)
+        return 'cmd' + repr(self.s)
 
     def empty(self):
         return self.s == None

@@ -45,9 +45,9 @@ class EventHandler(object):
         if self.consensus.isSeq:
             self.certifics.add((cert, rid, value))
             self.consensus.observeDecision(value, self.certifics)
-            resp = self.consensus.update(value)
-            if resp:
-                print 'command result: ', resp
+            resps = self.consensus.tryUpdates()
+            if resps:
+                print 'command result(s): ', resps
                 return True
 
     def certify_request(self, (cert, rid, value)):
@@ -58,15 +58,21 @@ class EventHandler(object):
     def snapshot_request(self, item):
         (cert, rid, proseq, state) = item
         self.snapshots.add(item)
+        isseq = self.consensus.isSeq
         msgs = self.consensus.recover(rid, self.snapshots)
-        if msgs:
+        ret = False
+        if isseq == False and self.consensus.isSeq:
             print self.consensus.cert, ' became master'
+            ret = True
+        if msgs:
             for m in msgs:
                 self.network.sendAll(m, self.response)
-            return True
+            ret = True
+        return ret
 
     def decide_request(self, value):
-        self.consensus.observeDecision(value)
+        self.consensus.observeDecision(value, leaderDecided=True)
+        self.consensus.tryUpdates()
 
     def supportRound_request(self, (rid, proseq)):
         resp = self.consensus.supportRound(rid, proseq)

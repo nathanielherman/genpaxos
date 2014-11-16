@@ -10,6 +10,12 @@ class ActiveRep(object):
         result = self.progstate.execute(value)
         return result
 
+    def tryUpdates(self):
+        resps = []
+        for val in self.progstate.execableValues():
+            resps.append(self.update(val))
+        return resps
+
 
 class MultiConsensus(ActiveRep):
     def __init__(self, cert, progstate, rid, n, 
