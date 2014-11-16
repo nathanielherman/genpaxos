@@ -64,8 +64,8 @@ class LogProgstate(multiconsensus.Progstate):
         self.version += 1
         return result
 
-    def cert_messages(self, cert):
-        msgs = []
+    def cert_values(self):
+        vals = []
         for slot, val in self.progsum.iteritems():
-            msgs.append(('certify', (cert, val.rid, SlottedValue(slot, val.cmd))))
-        return msgs
+            vals.append(SlottedValue(slot, val.cmd))
+        return vals

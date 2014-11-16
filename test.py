@@ -13,7 +13,7 @@ import eventhandler
 import appstate
 import Queue
 
-N = 3
+N = 5
 START_MASTER = -1
 
 def initialize(consensus):

@@ -11,7 +11,7 @@ class EventHandler(object):
         self.network = network
         self.certifics = set()
         self.snapshots = set()
-        nop = lambda item: ()
+        nop = lambda item: False
         self.handler_map = {'certify': self.certify_request, 'certifyResponse': self.certify_response,
                             'snapshot': self.snapshot_request, 'supportRound': self.supportRound_request, 'nop': nop}
         #threading.Thread(target=self.chan_handler).start()
@@ -22,8 +22,14 @@ class EventHandler(object):
             resp = ('nop', 1)
         return resp
 
+    def response(self, (msg, item)):
+        # TODO: do we want to fully separate requests and responses?
+        # is there ever a case where an rpc can be both?
+        resp = self.handler_map[msg](item)
+        return resp
+
     def client_request(self, value):
-        print 'run'
+        print 'run', value
         # TODO: if not master, respond to client telling them who is
         send = self.consensus.certifySeq(self.consensus.rid, value)
         if send:
@@ -33,7 +39,7 @@ class EventHandler(object):
             # BUT this won't work right now because certifySeq adds this command
             # to our progsum already... probably should be all or nothing
             self.certifics.add((self.consensus.cert, self.consensus.rid, value))
-            self.network.sendAll(send, self.request)
+            self.network.sendAll(send, self.response)
 
     def certify_response(self, (cert, rid, value)):
         if self.consensus.isSeq:
@@ -53,11 +59,11 @@ class EventHandler(object):
         (cert, rid, proseq, state) = item
         self.snapshots.add(item)
         msgs = self.consensus.recover(rid, self.snapshots)
-        if self.consensus.isSeq:
+        if msgs:
             print self.consensus.cert, ' became master'
-            if msgs:
-                for m in msgs:
-                    self.network.sendAll(m, self.request)
+            for m in msgs:
+                self.network.sendAll(m, self.response)
+            return True
 
     def decide_request(self, value):
         self.consensus.observeDecision(value)
@@ -71,7 +77,7 @@ class EventHandler(object):
         our_resp = self.consensus.supportRound(new_rid, self.consensus.cert)
         assert our_resp
         self.snapshots.add(our_resp[1])
-        self.network.sendAll(('supportRound', (new_rid, self.consensus.cert)), self.request)
+        self.network.sendAll(('supportRound', (new_rid, self.consensus.cert)), self.response)
 
     def send_certify(self, item):
         assert 0

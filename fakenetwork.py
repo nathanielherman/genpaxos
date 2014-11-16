@@ -14,9 +14,10 @@ class FakeNetwork(object):
         resps = map(lambda n: (n, self.send(n, msg, item)), replicas)
         while len(resps):
             node, future = resps.pop(0)
-            if self.me.consensus.cert == node:
-                continue
             resp = future.result()
+#            if self.me.consensus.cert == node:
+ #               print 'callback', callback(resp)
+  #              continue
             if resp:
                 # they don't need these to be sent anymore (or, possibly,
                 # we could continue sending in the background)

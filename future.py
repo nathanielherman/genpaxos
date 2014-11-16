@@ -13,11 +13,8 @@ class Future(object):
         self.ran = False
         self.res = None
         def run():
-            print 'calling'
             ret = self.fn(*args, **kwargs)
-            print 'completed'
             self.chan.put(ret)
-            print 'exit'
         threading.Thread(target=run).run()
 
     def result(self):

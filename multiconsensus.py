@@ -57,7 +57,8 @@ class MultiConsensus(ActiveRep):
         self.progstate.set(reduce(lambda ps1, ps2: ps1.consolidate(ps2), support))
         self.isSeq = True
         
-        return self.progstate.cert_messages(self.cert)
+        cert_vals = self.progstate.cert_values()
+        return [('certify', (self.cert, self.rid, v)) for v in cert_vals]
 
     @precondition(lambda self, rid, value: self.isSeq and rid == self.rid \
                  #and value in inputs
