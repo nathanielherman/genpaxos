@@ -43,13 +43,11 @@ def test_recovery(replicas):
 def main():
     replicas = []
     for i in xrange(N):
-        cert_chan = Queue.Queue()
-        snap_chan = Queue.Queue()
         progstate = logprogstate.LogProgstate(appstate.LogDB())
         consensus = multiconsensus.MultiConsensus(i, progstate, 
-                                                  1 if START_MASTER else 0, N, cert_chan, snap_chan)
+                                                  1 if START_MASTER else 0, N)
         initialize(consensus)
-        handler = eventhandler.EventHandler(consensus, None, cert_chan, snap_chan)
+        handler = eventhandler.EventHandler(consensus, None)
         net = fakenetworkdebug.FakeNetworkDebug(None, handler)
         handler.network = net
 

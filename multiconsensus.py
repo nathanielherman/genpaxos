@@ -18,8 +18,7 @@ class ActiveRep(object):
 
 
 class MultiConsensus(ActiveRep):
-    def __init__(self, cert, progstate, rid, n, 
-                 certifics_chan, snapshots_chan):
+    def __init__(self, cert, progstate, rid, n):
         super(MultiConsensus, self).__init__(progstate)
         self.rid = rid
         self.isSeq = False
@@ -27,8 +26,6 @@ class MultiConsensus(ActiveRep):
         self.proseq = -1
         self.cert = cert
         self.n = n
-        self.certifics_chan = certifics_chan
-        self.snapshots_chan = snapshots_chan
 
     @precondition(lambda self, rid, proseq: rid > self.rid)
     def supportRound(self, rid, proseq):
@@ -102,6 +99,8 @@ class MultiConsensus(ActiveRep):
                   (certifics and self._roundSupport(certifics, value) > self.n/2))
     def observeDecision(self, value, certifics=None, leaderDecided=False):
         self.progstate.learn(value)
+        if self.isSeq:
+            return ('decide', (value))
 
 class Progstate:
     def consolidate(self, progstate2):

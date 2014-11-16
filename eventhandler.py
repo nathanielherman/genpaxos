@@ -4,16 +4,15 @@ import Queue
 from multiconsensus import *
 
 class EventHandler(object):
-    def __init__(self, consensus, network, certifics_chan, snapshots_chan):
+    def __init__(self, consensus, network):
         self.consensus = consensus
-        self.certifics_chan = certifics_chan
-        self.snapshots_chan = snapshots_chan
         self.network = network
         self.certifics = set()
         self.snapshots = set()
         nop = lambda item: False
         self.handler_map = {'certify': self.certify_request, 'certifyResponse': self.certify_response,
-                            'snapshot': self.snapshot_request, 'supportRound': self.supportRound_request, 'nop': nop}
+                            'snapshot': self.snapshot_request, 'supportRound': self.supportRound_request, 
+                            'decide': self.decide_request, 'nop': nop}
         #threading.Thread(target=self.chan_handler).start()
 
     def request(self, (msg, item)):
@@ -44,10 +43,12 @@ class EventHandler(object):
     def certify_response(self, (cert, rid, value)):
         if self.consensus.isSeq:
             self.certifics.add((cert, rid, value))
-            self.consensus.observeDecision(value, self.certifics)
-            resps = self.consensus.tryUpdates()
-            if resps:
-                print 'command result(s): ', resps
+            decide_resp = self.consensus.observeDecision(value, self.certifics)
+            client_resps = self.consensus.tryUpdates()
+            if client_resps:
+                print 'command result(s): ', client_resps
+            if decide_resp:
+                self.network.sendAll(decide_resp, lambda item: True)
                 return True
 
     def certify_request(self, (cert, rid, value)):
@@ -70,7 +71,7 @@ class EventHandler(object):
             ret = True
         return ret
 
-    def decide_request(self, value):
+    def decide_request(self, (value)):
         self.consensus.observeDecision(value, leaderDecided=True)
         self.consensus.tryUpdates()
 
@@ -84,24 +85,3 @@ class EventHandler(object):
         assert our_resp
         self.snapshots.add(our_resp[1])
         self.network.sendAll(('supportRound', (new_rid, self.consensus.cert)), self.response)
-
-    def send_certify(self, item):
-        assert 0
-        self.network.send(self.consensus.proseq, 'certify', item)
-
-    def send_snapshot(self, item):
-        self.network.send(item[2], 'snapshot', item)
-
-    def chan_handler(self):
-        chans = [self.certifics_chan, self.snapshots_chan]
-        chan_funcs = [self.send_certify, self.send_snapshot]
-        ind = 0
-        while 1:
-            try:
-                item = chans[ind].get_nowait()
-                print 'got event'
-                chan_funcs[ind](item)
-            except Queue.Empty:
-                if ind == len(chans)-1:
-                    time.sleep(.1)
-            ind = (ind + 1) % len(chans)
