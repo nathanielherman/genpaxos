@@ -21,13 +21,8 @@ def initialize(consensus):
         consensus.proseq = START_MASTER
         consensus.isSeq = consensus.proseq == consensus.cert
 
-def test_mismatchedlogs(replicas):
-    replicas[0].me.timeout()
-    replicas[1].crashed = True
-    replicas[2].crashed = True
-    replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("bar")))
-    replicas[0].crashed = True
-    replicas[1].me.timeout()
+def go(f):
+    threading.Thread(target=f).start()
 
 def test_recovery(replicas):
     replicas[0].me.timeout()
@@ -37,8 +32,29 @@ def test_recovery(replicas):
     replicas[1].crashed = False
     replicas[0].me.client_request(SlottedValue(2, appstate.Cmd("baz")))
     replicas[2].crashed = True
-    replicas[0].me.timeout()
+#    replicas[0].me.timeout()
     replicas[0].me.client_request(SlottedValue(3, appstate.Cmd("fuzz")))
+    for r in replicas:
+        print r.me.consensus.progstate
+
+def test_mismatchedlogs(replicas):
+    replicas[0].me.timeout()
+    replicas[1].crashed = True
+    replicas[2].crashed = True
+    go(lambda: replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("bar"))))
+    time.sleep(.5)
+    replicas[0].crashed = True
+    replicas[1].crashed = False
+    replicas[2].crashed = False
+    replicas[1].me.timeout()
+    replicas[1].me.client_request(SlottedValue(0, appstate.Cmd("bar2")))
+    replicas[1].crashed = True
+    replicas[0].crashed = False
+    replicas[0].me.timeout()
+    replicas[0].me.timeout()
+    for r in replicas:
+        print r.me.consensus.progstate
+
 
 def main():
     replicas = []
@@ -56,6 +72,9 @@ def main():
     for r in replicas:
         r.config = replicas
 
+    #test_recovery(replicas)
+    test_mismatchedlogs(replicas)
+    return
 
     replicas[0].me.timeout()
     replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("bar")))

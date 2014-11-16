@@ -15,7 +15,7 @@ class Future(object):
         def run():
             ret = self.fn(*args, **kwargs)
             self.chan.put(ret)
-        threading.Thread(target=run).run()
+        threading.Thread(target=run).start()
 
     def result(self):
         if not self.ran:

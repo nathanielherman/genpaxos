@@ -57,7 +57,7 @@ class MultiConsensus(ActiveRep):
                   len(self._supporters(rid, self.cert, snapshots)) > self.n/2)
     def recover(self, rid, snapshots):
         support = self._supporters(rid, self.cert, snapshots)
-        self.progstate.set(reduce(lambda ps1, ps2: ps1.consolidate(ps2), support))
+        self.progstate = self.progstate.set(reduce(lambda ps1, ps2: ps1.consolidate(ps2), support))
         self.isSeq = True
         
         cert_vals = self.progstate.cert_values()
@@ -106,7 +106,7 @@ class Progstate:
     def consolidate(self, progstate2):
         pass
     def set(self, new_progstate):
-        self = new_progstate
+        return new_progstate
     def seq_certifiable(self, rid, value):
         pass
     def certifiable(self, rid, value):

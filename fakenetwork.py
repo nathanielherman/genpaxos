@@ -12,7 +12,8 @@ class FakeNetwork(object):
         replicas = range(len(self.config))
         # TODO: we're sending to ourselves here (should turn into a no op)
         resps = map(lambda n: (n, self.send(n, msg, item)), replicas)
-        while len(resps):
+        retries = 0
+        while len(resps) and retries < 2:
             node, future = resps.pop(0)
             resp = future.result()
 #            if self.me.consensus.cert == node:
@@ -27,6 +28,7 @@ class FakeNetwork(object):
             else:
                 # keep trying
                 resps.append((node, self.send(node, msg, item)))
+                retries += 1
 
     def receive(self, msg, item):
         print 'node ', self.me.consensus.cert, ' received ', msg, item

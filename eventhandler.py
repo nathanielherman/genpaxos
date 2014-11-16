@@ -80,7 +80,8 @@ class EventHandler(object):
         return resp
 
     def timeout(self):
-        new_rid = ((self.consensus.rid+1) << 8) | self.consensus.cert
+        cur = self.consensus.rid >> 8
+        new_rid = ((cur+1) << 8) | self.consensus.cert
         our_resp = self.consensus.supportRound(new_rid, self.consensus.cert)
         assert our_resp
         self.snapshots.add(our_resp[1])

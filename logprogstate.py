@@ -42,6 +42,10 @@ class LogProgstate(multiconsensus.Progstate):
             % (repr(self.appState), self.version, repr(self.progsum), \
                    repr(self.learned))
 
+    def set(self, new_progsum):
+        self.progsum = new_progsum
+        return self
+
     def seq_certifiable(self, rid, value):
         # TODO: is this actually sufficient
         return self.progsum[value.slot].cmd.empty() and \
