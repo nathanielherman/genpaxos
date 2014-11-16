@@ -10,6 +10,7 @@ class FakeNetwork(object):
     def sendAll(self, (msg, item), callback):
         resps = []
         replicas = range(len(self.config))
+        # TODO: we're sending to ourselves here (should turn into a no op)
         resps = map(lambda n: (n, self.send(n, msg, item)), replicas)
         while len(resps):
             node, future = resps.pop(0)
@@ -26,13 +27,14 @@ class FakeNetwork(object):
                 resps.append((node, self.send(node, msg, item)))
 
     def receive(self, msg, item):
-        print 'recv'
+        print 'node ', self.me.consensus.cert, ' received ', msg, item
         resp = self.me.request((msg, item))
         return resp
 
     # send does an actual network "send"
     def send(self, node, msg, item):
+        print 'node ', self.me.consensus.cert, ' send to ', node, msg, item
         # our fake network calls a node's network.receive() directly
         # retry if returns None?
         # how distinguish network failure and a replica saying fuck off
-        return Future(True, self.config[node].receive, msg, item)
+        return Future(False, self.config[node].receive, msg, item)

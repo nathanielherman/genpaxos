@@ -6,7 +6,9 @@ import threading
 
 import multiconsensus
 import fakenetwork
+import fakenetworkdebug
 import logprogstate
+from logprogstate import SlottedValue
 import eventhandler
 import appstate
 import Queue
@@ -19,13 +21,6 @@ def initialize(consensus):
         consensus.proseq = START_MASTER
         consensus.isSeq = consensus.proseq == consensus.cert
 
-class SlottedValue(object):
-    def __init__(self, slot, cmd):
-        self.slot = slot
-        self.cmd = cmd
-    def __repr__(self):
-        return repr((self.slot, self.cmd))
-
 def main():
     replicas = []
     for i in xrange(N):
@@ -36,7 +31,7 @@ def main():
                                                   1 if START_MASTER else 0, N, cert_chan, snap_chan)
         initialize(consensus)
         handler = eventhandler.EventHandler(consensus, None, cert_chan, snap_chan)
-        net = fakenetwork.FakeNetwork(None, handler)
+        net = fakenetworkdebug.FakeNetworkDebug(None, handler)
         handler.network = net
 
         replicas.append(net)
@@ -45,9 +40,12 @@ def main():
         r.config = replicas
 
     replicas[0].me.timeout()
+    replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("bar")))
+    replicas[0].crashed = True
 
-    replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("foo")))
-    replicas[0].me.client_request(SlottedValue(1, appstate.Cmd("bar")))
+    replicas[1].me.timeout()
+    replicas[1].me.client_request(SlottedValue(1, appstate.Cmd("foo")))
+
 
 if __name__ == '__main__':
     try:

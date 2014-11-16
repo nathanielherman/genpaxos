@@ -11,12 +11,16 @@ class EventHandler(object):
         self.network = network
         self.certifics = set()
         self.snapshots = set()
+        nop = lambda item: ()
         self.handler_map = {'certify': self.certify_request, 'certifyResponse': self.certify_response,
-                            'snapshot': self.snapshot_request, 'supportRound': self.supportRound_request}
+                            'snapshot': self.snapshot_request, 'supportRound': self.supportRound_request, 'nop': nop}
         #threading.Thread(target=self.chan_handler).start()
 
     def request(self, (msg, item)):
-        return self.handler_map[msg](item)
+        resp = self.handler_map[msg](item)
+        if not resp:
+            resp = ('nop', 1)
+        return resp
 
     def client_request(self, value):
         print 'run'
@@ -41,16 +45,19 @@ class EventHandler(object):
                 return True
 
     def certify_request(self, (cert, rid, value)):
-            resp = self.consensus.certify(rid, value)
-            print 'cert_resp', resp
-            return resp
+        resp = self.consensus.certify(rid, value)
+        print 'cert_resp', resp
+        return resp
 
     def snapshot_request(self, item):
         (cert, rid, proseq, state) = item
         self.snapshots.add(item)
-        self.consensus.recover(rid, self.snapshots)
+        msgs = self.consensus.recover(rid, self.snapshots)
         if self.consensus.isSeq:
             print self.consensus.cert, ' became master'
+            if msgs:
+                for m in msgs:
+                    self.network.sendAll(m, self.request)
 
     def decide_request(self, value):
         self.consensus.observeDecision(value)

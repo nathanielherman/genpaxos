@@ -9,10 +9,17 @@ class RidCmd:
     def __repr__(self):
         return repr((self.rid, self.cmd))
 
+class SlottedValue(object):
+    def __init__(self, slot, cmd):
+        self.slot = slot
+        self.cmd = cmd
+    def __repr__(self):
+        return repr((self.slot, self.cmd))
+
 class Progsum(defaultdict):
     def consolidate(self, ps2):
         ret = self.copy()
-        for slot, val in ps2:
+        for slot, val in ps2.iteritems():
             if val.rid > ret[slot].rid:
                 ret[slot] = val
         return ret
@@ -56,3 +63,9 @@ class LogProgstate(multiconsensus.Progstate):
         result = self.appState.execute(value.cmd)
         self.version += 1
         return result
+
+    def cert_messages(self, cert):
+        msgs = []
+        for slot, val in self.progsum.iteritems():
+            msgs.append(('certify', (cert, val.rid, SlottedValue(slot, val.cmd))))
+        return msgs
