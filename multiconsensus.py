@@ -61,6 +61,7 @@ class MultiConsensus(ActiveRep):
         self.isSeq = True
         
         cert_vals = self.progstate.cert_values()
+        # TODO: maybe what we really want is for this to call certifySeq?
         return [('certify', (self.cert, self.rid, v)) for v in cert_vals]
 
     @precondition(lambda self, rid, value: self.isSeq and rid == self.rid \
@@ -68,7 +69,8 @@ class MultiConsensus(ActiveRep):
                  and self.progstate.seq_certifiable(rid, value))
     def certifySeq(self, rid, value):
         print 'certseq'
-        self.progstate.certify(rid, value)
+        # we don't currently actually certify here, though we could
+        # instead we let the network implicitly do it (unclear which is really better)
         return ('certify', (self.cert, rid, value))
 
     # network precondition: someone else has certified this command

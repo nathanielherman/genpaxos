@@ -25,6 +25,12 @@ def go(f):
     threading.Thread(target=f).start()
 
 def test_recovery(replicas):
+    '''Tests whether replicas with out of date state can keep participating successfully
+
+    Expected outcome:
+    fuzz gets successfully committed (but will only be in 0's appstate)
+    1 has fuzz in the log but not committed
+    2 has everything before fuzz in log (because it crashes then)'''
     replicas[0].me.timeout()
     replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("bar")))
     replicas[1].crashed = True
@@ -38,6 +44,10 @@ def test_recovery(replicas):
         print r.me.consensus.progstate
 
 def test_mismatchedlogs(replicas):
+    '''Tests whether recovery works in the case where different replicas disagree on logs
+
+    Expected outcome:
+    everyone puts bar2 in their appstate, bar gets obliterated'''
     replicas[0].me.timeout()
     replicas[1].crashed = True
     replicas[2].crashed = True
@@ -72,8 +82,8 @@ def main():
     for r in replicas:
         r.config = replicas
 
-    #test_recovery(replicas)
-    test_mismatchedlogs(replicas)
+    test_recovery(replicas)
+    #test_mismatchedlogs(replicas)
     return
 
     replicas[0].me.timeout()

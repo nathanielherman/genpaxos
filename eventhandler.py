@@ -13,7 +13,6 @@ class EventHandler(object):
         self.handler_map = {'certify': self.certify_request, 'certifyResponse': self.certify_response,
                             'snapshot': self.snapshot_request, 'supportRound': self.supportRound_request, 
                             'decide': self.decide_request, 'nop': nop}
-        #threading.Thread(target=self.chan_handler).start()
 
     def request(self, (msg, item)):
         resp = self.handler_map[msg](item)
@@ -32,12 +31,9 @@ class EventHandler(object):
         # TODO: if not master, respond to client telling them who is
         send = self.consensus.certifySeq(self.consensus.rid, value)
         if send:
-            # we always certify our own commands 
-            # (TODO: should this be handled differently?)
-            # we could do this by sending ourself a pseudo-network request
-            # BUT this won't work right now because certifySeq adds this command
-            # to our progsum already... probably should be all or nothing
-            self.certifics.add((self.consensus.cert, self.consensus.rid, value))
+            # TODO: haven't totally decided whether we should certify our own commands by going through sendAll
+            # like this or just doing it sorta manually. this way seems cleaner for the most part but is less efficient
+            # technically
             self.network.sendAll(send, self.response)
 
     def certify_response(self, (cert, rid, value)):
@@ -82,7 +78,4 @@ class EventHandler(object):
     def timeout(self):
         cur = self.consensus.rid >> 8
         new_rid = ((cur+1) << 8) | self.consensus.cert
-        our_resp = self.consensus.supportRound(new_rid, self.consensus.cert)
-        assert our_resp
-        self.snapshots.add(our_resp[1])
         self.network.sendAll(('supportRound', (new_rid, self.consensus.cert)), self.response)
