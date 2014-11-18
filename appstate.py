@@ -10,16 +10,21 @@ class Cmd(object):
 # mostly for debugging, this "database" simply keeps a list of all exec'd
 # commands
 class LogDB(object):
+    nop = 'NOP'
     def __init__(self):
         self.log = []
     def __repr__(self):
         return repr(self.log)
 
+    # hmmm this is a little confusing? 
     def emptyCommand(self):
         return Cmd()
+    def nopCommand(self):
+        return Cmd(self.nop)
 
     def execute(self, cmd):
         assert not cmd.empty()
-        self.log.append(cmd)
+        if cmd.s != self.nop:
+            self.log.append(cmd)
 
         return 'Success-' + repr(cmd)

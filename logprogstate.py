@@ -23,6 +23,20 @@ class Progsum(defaultdict):
             if val.rid > ret[slot].rid:
                 ret[slot] = val
         return ret
+    
+    def updateRid(self, rid):
+        def upd(slot):
+            self[slot].rid = rid
+        map(upd, self)
+
+    def fillGaps(self, ridcmd):
+        expected_slot = 0
+        for slot in sorted(self.keys()):
+            while expected_slot < slot and self[expected_slot].cmd.empty():
+                self[expected_slot] = ridcmd
+                expected_slot += 1
+            expected_slot = slot+1
+
 
     def __hash__(self):
         return 0
@@ -42,7 +56,10 @@ class LogProgstate(multiconsensus.Progstate):
             % (repr(self.appState), self.version, repr(self.progsum), \
                    repr(self.learned))
 
-    def set(self, new_progsum):
+    def set(self, new_progsum, rid):
+        new_progsum.updateRid(rid)
+        # fill in gaps with no ops
+        new_progsum.fillGaps(RidCmd(rid, self.appState.nopCommand()))
         self.progsum = new_progsum
         return self
 
@@ -52,8 +69,13 @@ class LogProgstate(multiconsensus.Progstate):
             (value.slot == 0 or not self.progsum[value.slot - 1].cmd.empty())
 
     def certifiable(self, rid, value):
-        print 'certifiable', rid > self.progsum[value.slot].rid
-        return rid > self.progsum[value.slot].rid
+        print 'certifiable', rid >= self.progsum[value.slot].rid
+        if rid == self.progsum[value.slot].rid:
+            assert value.cmd == self.progsum[value.slot].cmd
+        # we actually do allow recertifying commands (this 
+        # should be effectively the same as our certify message getting
+        # duplicated)
+        return rid >= self.progsum[value.slot].rid
 
     def certify(self, rid, value):
        self.progsum[value.slot] = RidCmd(rid, value.cmd)

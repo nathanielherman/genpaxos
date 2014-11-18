@@ -38,8 +38,9 @@ def test_recovery(replicas):
     replicas[1].crashed = False
     replicas[0].me.client_request(SlottedValue(2, appstate.Cmd("baz")))
     replicas[2].crashed = True
-#    replicas[0].me.timeout()
     replicas[0].me.client_request(SlottedValue(3, appstate.Cmd("fuzz")))
+
+    #replicas[1].me.timeout()
     for r in replicas:
         print r.me.consensus.progstate
 
@@ -65,6 +66,27 @@ def test_mismatchedlogs(replicas):
     for r in replicas:
         print r.me.consensus.progstate
 
+def test_gap(replicas):
+    '''Tests whether gaps in the log successfully get filled with NOPs
+
+    Expected outcome:
+    slot 1 gets replaced with a NOP, giving final appstate
+    ['bar','baz','fuzz'] for 1 and 2, but just 'bar' for 0 (who crashes)
+    '''
+    replicas[0].me.timeout()
+    replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("bar")))
+    replicas[1].crashed = replicas[2].crashed = True
+    replicas[0].me.client_request(SlottedValue(1, appstate.Cmd("foo")))
+    replicas[1].crashed = replicas[2].crashed = False
+    replicas[0].me.client_request(SlottedValue(2, appstate.Cmd("baz")))
+
+    replicas[0].crashed = True
+    replicas[1].me.timeout()
+    replicas[1].me.client_request(SlottedValue(3, appstate.Cmd("fuzz")))
+
+    for r in replicas:
+        print r.me.consensus.progstate
+    
 
 def main():
     replicas = []
@@ -82,8 +104,9 @@ def main():
     for r in replicas:
         r.config = replicas
 
-    test_recovery(replicas)
-    #test_mismatchedlogs(replicas)
+    test_gap(replicas)
+#    test_recovery(replicas)
+#    test_mismatchedlogs(replicas)
     return
 
     replicas[0].me.timeout()
