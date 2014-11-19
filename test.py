@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import os
+import random
 import sys
 import time
 import threading
@@ -144,8 +145,65 @@ def test_many(nreps=3):
 
     assert check_replicas(replicas)
 
+def test_rand(nreps=3, runtime=10, seed=0, crash_freq=1, crash_skew=.5, client_freq=.1, timeout_freq=1):
+    replicas = gen_replicas(nreps)
+    done = False
+
+    downreps = 0
+
+    def crasher():
+        rand = random.Random(seed)
+        while not done:
+            time.sleep(crash_freq)
+            crash = rand.random() < crash_skew
+            # nothing to bring up
+            if not crash and downreps == 0:
+                continue
+            # we'll lose a majority if we crash another
+            if crash and downreps == nreps/2:
+                continue
+            rep = rand.choice(replicas)
+            rep.crashed = crash
+            downreps += 1 if crash else -1
+
+    def client(id=0):
+        rand = random.Random(seed+id)
+        i = 0
+        while not done:
+            time.sleep(client_freq)
+            # racey (but shouldn't really matter?)
+            r = find_master(replicas)
+            if not r:
+                continue
+            c = '%d,%d' % (id, i)
+            r.me.request(('client', appstate.Cmd(c)))
+            i += 1
+
+    def timeout(id=0):
+        rand = random.Random(seed+id)
+        while not done:
+            time.sleep(timeout_freq)
+            rep = rand.choice(replicas)
+            rep.me.timeout()
+
+    replicas[0].me.timeout()
+    go(client)
+    go(crasher)
+    go(timeout)
+
+    time.sleep(runtime)
+    done = True
+    time.sleep(2)
+
+    assert check_replicas(replicas)
+
+    print_replicas(replicas)
+
 def main():
     replicas = gen_replicas(N)
+
+    test_rand()
+    return
 
     test_many()
     time.sleep(1)

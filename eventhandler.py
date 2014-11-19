@@ -11,7 +11,8 @@ class EventHandler(object):
         self.certifics = set()
         self.snapshots = set()
         nop = lambda item: False
-        self.handler_map = {'certify': self.certify_request, 'certifyResponse': self.certify_response,
+        self.handler_map = {'client': self.client_request,
+                            'certify': self.certify_request, 'certifyResponse': self.certify_response,
                             'snapshot': self.snapshot_request, 'supportRound': self.supportRound_request, 
                             'decide': self.decide_request, 'nop': nop}
 
