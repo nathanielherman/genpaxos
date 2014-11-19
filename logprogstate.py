@@ -1,4 +1,5 @@
 from collections import defaultdict
+import copy
 import multiconsensus
 
 
@@ -16,9 +17,17 @@ class SlottedValue(object):
     def __repr__(self):
         return repr((self.slot, self.cmd))
 
-class Progsum(defaultdict):
+class Progsum(dict):
+    default_factory = None
+
+    def __getitem__(self, y):
+        try:
+            return super(Progsum, self).__getitem__(y)
+        except KeyError:
+            return self.default_factory()
+
     def consolidate(self, ps2):
-        ret = self.copy()
+        ret = copy.copy(self)
         for slot, val in ps2.iteritems():
             if val.rid > ret[slot].rid:
                 ret[slot] = val
