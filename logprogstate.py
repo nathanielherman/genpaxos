@@ -75,8 +75,9 @@ class LogProgstate(multiconsensus.Progstate):
         return self
 
     def seq_certifiable(self, rid, value):
+        return True
         # TODO: is this actually sufficient
-        print 'seq_cert %d %s %s' % (value.slot, repr(self.progsum[value.slot].cmd), 
+        print 'seq_cert %d %s %s' % (value, repr(self.progsum[value.slot].cmd), 
                                      repr(self.progsum[value.slot - 1].cmd))
         return self.progsum[value.slot].cmd.empty() and \
             (value.slot == 0 or not self.progsum[value.slot - 1].cmd.empty())

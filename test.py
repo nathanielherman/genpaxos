@@ -33,13 +33,13 @@ def test_recovery(replicas):
     1 has fuzz in the log but not committed
     2 has everything before fuzz in log (because it crashes then)'''
     replicas[0].me.timeout()
-    replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("bar")))
+    replicas[0].me.client_request(appstate.Cmd("bar"))
     replicas[1].crashed = True
-    replicas[0].me.client_request(SlottedValue(1, appstate.Cmd("foo")))
+    replicas[0].me.client_request(appstate.Cmd("foo"))
     replicas[1].crashed = False
-    replicas[0].me.client_request(SlottedValue(2, appstate.Cmd("baz")))
+    replicas[0].me.client_request(appstate.Cmd("baz"))
     replicas[2].crashed = True
-    replicas[0].me.client_request(SlottedValue(3, appstate.Cmd("fuzz")))
+    replicas[0].me.client_request(appstate.Cmd("fuzz"))
 
     #replicas[1].me.timeout()
     for r in replicas:
@@ -49,17 +49,18 @@ def test_mismatchedlogs(replicas):
     '''Tests whether recovery works in the case where different replicas disagree on logs
 
     Expected outcome:
-    everyone puts bar2 in their appstate, bar gets obliterated'''
+    everyone puts bar2 in their appstate, bar gets obliterated
+    (replica 1 will have an out of date rid for it)'''
     replicas[0].me.timeout()
     replicas[1].crashed = True
     replicas[2].crashed = True
-    go(lambda: replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("bar"))))
+    go(lambda: replicas[0].me.client_request(appstate.Cmd("bar")))
     time.sleep(.5)
     replicas[0].crashed = True
     replicas[1].crashed = False
     replicas[2].crashed = False
     replicas[1].me.timeout()
-    replicas[1].me.client_request(SlottedValue(0, appstate.Cmd("bar2")))
+    replicas[1].me.client_request(appstate.Cmd("bar2"))
     replicas[1].crashed = True
     replicas[0].crashed = False
     replicas[0].me.timeout()
@@ -75,25 +76,25 @@ def test_gap(replicas):
     ['bar','baz','fuzz'] for 1 and 2, but just 'bar' for 0 (who crashes)
     '''
     replicas[0].me.timeout()
-    replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("bar")))
+    replicas[0].me.client_request(appstate.Cmd("bar"))
     replicas[1].crashed = replicas[2].crashed = True
-    replicas[0].me.client_request(SlottedValue(1, appstate.Cmd("foo")))
+    replicas[0].me.client_request(appstate.Cmd("foo"))
     replicas[1].crashed = replicas[2].crashed = False
-    replicas[0].me.client_request(SlottedValue(2, appstate.Cmd("baz")))
+    replicas[0].me.client_request(appstate.Cmd("baz"))
 
     replicas[0].crashed = True
     replicas[1].me.timeout()
-    replicas[1].me.client_request(SlottedValue(3, appstate.Cmd("fuzz")))
+    replicas[1].me.client_request(appstate.Cmd("fuzz"))
 
     for r in replicas:
         print r.me.consensus.progstate
 
 def test_notleader(replicas):
     replicas[0].me.timeout()
-    replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("bar")))
+    replicas[0].me.client_request(appstate.Cmd("bar"))
 
     replicas[1].me.timeout()
-    replicas[0].me.client_request(SlottedValue(1, appstate.Cmd("foo")))
+    replicas[0].me.client_request(appstate.Cmd("foo"))
 
     for r in replicas:
         print r.me.consensus.progstate
@@ -106,12 +107,13 @@ def test_many(replicas):
     def f():
         for i in xrange(N):
             time.sleep(.01)
-            go(lambda: replicas[0].me.client_request(SlottedValue(i, appstate.Cmd('c' + str(i)))))
+            go(lambda: replicas[0].me.client_request(appstate.Cmd('c' + str(i))))
     go(f)
     time.sleep(2)
     go(lambda: replicas[1].me.timeout())
 
-    go(lambda: replicas[1].me.client_request(SlottedValue(N, appstate.Cmd('final'))))
+    time.sleep(3)
+    go(lambda: replicas[1].me.client_request(appstate.Cmd('final')))
     time.sleep(5)
     for r in replicas:
         print r.me.consensus.progstate
@@ -131,21 +133,23 @@ def main():
 
     for r in replicas:
         r.config = replicas
-    pass
+
 
     test_many(replicas)
+#    test_notleader(replicas)
 #    test_gap(replicas)
 #    test_recovery(replicas)
 #    test_mismatchedlogs(replicas)
+
     return
 
     replicas[0].me.timeout()
-    replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("bar")))
+    replicas[0].me.client_request(appstate.Cmd("bar"))
     replicas[0].crashed = True
 
     replicas[1].me.timeout()
-    replicas[1].me.client_request(SlottedValue(1, appstate.Cmd("foo")))
-    replicas[1].me.client_request(SlottedValue(2, appstate.Cmd("baz")))
+    replicas[1].me.client_request(appstate.Cmd("foo"))
+    replicas[1].me.client_request(appstate.Cmd("baz"))
 
     for r in replicas:
         print r.me.consensus.progstate
