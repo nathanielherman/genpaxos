@@ -22,6 +22,7 @@ def initialize(consensus):
         consensus.isSeq = consensus.proseq == consensus.cert
 
 def go(f):
+    #f()
     threading.Thread(target=f).start()
 
 def test_recovery(replicas):
@@ -86,7 +87,34 @@ def test_gap(replicas):
 
     for r in replicas:
         print r.me.consensus.progstate
-    
+
+def test_notleader(replicas):
+    replicas[0].me.timeout()
+    replicas[0].me.client_request(SlottedValue(0, appstate.Cmd("bar")))
+
+    replicas[1].me.timeout()
+    replicas[0].me.client_request(SlottedValue(1, appstate.Cmd("foo")))
+
+    for r in replicas:
+        print r.me.consensus.progstate
+
+
+def test_many(replicas):
+    go(lambda: replicas[0].me.timeout())
+    time.sleep(.1)
+    N = 1000
+    def f():
+        for i in xrange(N):
+            time.sleep(.01)
+            go(lambda: replicas[0].me.client_request(SlottedValue(i, appstate.Cmd('c' + str(i)))))
+    go(f)
+    time.sleep(2)
+    go(lambda: replicas[1].me.timeout())
+
+    go(lambda: replicas[1].me.client_request(SlottedValue(N, appstate.Cmd('final'))))
+    time.sleep(5)
+    for r in replicas:
+        print r.me.consensus.progstate
 
 def main():
     replicas = []
@@ -103,8 +131,10 @@ def main():
 
     for r in replicas:
         r.config = replicas
+    pass
 
-    test_gap(replicas)
+    test_many(replicas)
+#    test_gap(replicas)
 #    test_recovery(replicas)
 #    test_mismatchedlogs(replicas)
     return

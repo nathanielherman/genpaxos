@@ -1,19 +1,40 @@
 from collections import defaultdict
 from conditions import precondition
 
+import threading
+
+import functools
+def protected(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        self.lock()
+        retval = func(self, *args, **kwargs)
+        self.unlock()
+        return retval
+    return wrapper
+
 class ActiveRep(object):
     def __init__(self, progstate):
         self.progstate = progstate
+        self.big_lock = threading.Lock()
+
+    def lock(self):
+        self.big_lock.acquire()
+    def unlock(self):
+        self.big_lock.release()
 
     @precondition(lambda self, value: self.progstate.needsExec(value))
-    def update(self, value):
+    def _update(self, value):
         result = self.progstate.execute(value)
         return result
 
+    update = protected(_update)
+
+    @protected
     def tryUpdates(self):
         resps = []
         for val in self.progstate.execableValues():
-            resps.append(self.update(val))
+            resps.append(self._update(val))
         return resps
 
 
@@ -27,6 +48,7 @@ class MultiConsensus(ActiveRep):
         self.cert = cert
         self.n = n
 
+    @protected
     @precondition(lambda self, rid, proseq: rid > self.rid)
     def supportRound(self, rid, proseq):
         self.rid = rid
@@ -53,28 +75,33 @@ class MultiConsensus(ActiveRep):
 
     # network precondition: S is a subset of snapshot messages received and
     # only includes messages matching our rid and with us as proseq
+    @protected
     @precondition(lambda self, rid, snapshots: self.rid == rid and not self.isSeq and \
                   len(self._supporters(rid, self.cert, snapshots)) > self.n/2)
     def recover(self, rid, snapshots):
         support = self._supporters(rid, self.cert, snapshots)
         consolidated = reduce(lambda ps1, ps2: ps1.consolidate(ps2), support)
         self.progstate = self.progstate.set(consolidated, self.rid)
+        # this can only happen AFTER we set progstate!!
         self.isSeq = True
         
         cert_vals = self.progstate.cert_values()
         # TODO: maybe what we really want is for this to call certifySeq?
         return [('certify', (self.cert, self.rid, v)) for v in cert_vals]
 
+    @protected
     @precondition(lambda self, rid, value: self.isSeq and rid == self.rid \
                  #and value in inputs
                  and self.progstate.seq_certifiable(rid, value))
     def certifySeq(self, rid, value):
         print 'certseq'
+        value = self.progstate.full_value(value)
         # we don't currently actually certify here, though we could
         # instead we let the network implicitly do it (unclear which is really better)
         return ('certify', (self.cert, rid, value))
 
     # network precondition: someone else has certified this command
+    @protected
     @precondition(lambda self, rid, value: 
                   self.rid == rid and self.progstate.certifiable(rid, value))
     def certify(self, rid, value):
@@ -97,6 +124,7 @@ class MultiConsensus(ActiveRep):
     # we know this either because: we're the master and we actually hear back
     # from a majority, OR we're a follower and the master told us a majority
     # had certified the command
+    @protected
     @precondition(lambda self, value, certifics=None, leaderDecided=False: 
                   leaderDecided or 
                   (certifics and self._roundSupport(certifics, value) > self.n/2))

@@ -59,6 +59,8 @@ class LogProgstate(multiconsensus.Progstate):
         self.progsum.default_factory = lambda: RidCmd(0, appState.emptyCommand())
         self.learned = defaultdict()
         self.learned.default_factory = lambda: appState.emptyCommand()
+        
+        self.next_slot = 0
 
     def __repr__(self):
         return "appState: %s; version: %d; log: %s; learned: %s" \
@@ -74,6 +76,8 @@ class LogProgstate(multiconsensus.Progstate):
 
     def seq_certifiable(self, rid, value):
         # TODO: is this actually sufficient
+        print 'seq_cert %d %s %s' % (value.slot, repr(self.progsum[value.slot].cmd), 
+                                     repr(self.progsum[value.slot - 1].cmd))
         return self.progsum[value.slot].cmd.empty() and \
             (value.slot == 0 or not self.progsum[value.slot - 1].cmd.empty())
 
@@ -117,3 +121,12 @@ class LogProgstate(multiconsensus.Progstate):
         for slot, val in self.progsum.iteritems():
             vals.append(SlottedValue(slot, val.cmd))
         return vals
+
+    # ehhh
+    def full_value(self, cmd):
+        # in case we weren't the master, etc, etc.
+        while not self.progsum[self.next_slot].cmd.empty():
+            self.next_slot += 1
+        ret = SlottedValue(self.next_slot, cmd)
+        self.next_slot += 1
+        return ret

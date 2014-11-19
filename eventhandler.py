@@ -7,6 +7,7 @@ class EventHandler(object):
     def __init__(self, consensus, network):
         self.consensus = consensus
         self.network = network
+        # TODO: maybe these should go inside consensus to get locking for free?
         self.certifics = set()
         self.snapshots = set()
         nop = lambda item: False
@@ -26,10 +27,10 @@ class EventHandler(object):
         resp = self.handler_map[msg](item)
         return resp
 
-    def client_request(self, value):
-        print 'run', value
+    def client_request(self, cmd):
+        print 'run', cmd
         # TODO: if not master, respond to client telling them who is
-        send = self.consensus.certifySeq(self.consensus.rid, value)
+        send = self.consensus.certifySeq(self.consensus.rid, cmd)
         if send:
             # TODO: haven't totally decided whether we should certify our own commands by going through sendAll
             # like this or just doing it sorta manually. this way seems cleaner for the most part but is less efficient
