@@ -3,6 +3,8 @@ class Cmd(object):
         self.s = s
     def __repr__(self):
         return 'cmd' + repr(self.s)
+    def __eq__(self, c2):
+        return self.s == c2.s
 
     def empty(self):
         return self.s == None
@@ -15,6 +17,10 @@ class LogDB(object):
         self.log = []
     def __repr__(self):
         return repr(self.log)
+    def __eq__(self, ld2):
+        return self.log == ld2.log
+    def __hash__(self):
+        return 0
 
     # hmmm this is a little confusing? 
     def emptyCommand(self):

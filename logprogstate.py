@@ -9,6 +9,8 @@ class RidCmd:
         self.cmd = cmd
     def __repr__(self):
         return repr((self.rid, self.cmd))
+    def __eq__(self, rc):
+        return self.rid == rc.rid and self.cmd == rc.cmd
 
 class SlottedValue(object):
     def __init__(self, slot, cmd):
@@ -16,6 +18,8 @@ class SlottedValue(object):
         self.cmd = cmd
     def __repr__(self):
         return repr((self.slot, self.cmd))
+    def __eq__(self, v):
+        return self.slot == v.slot and self.cmd == v.cmd
 
 class Progsum(dict):
     default_factory = None
@@ -46,9 +50,9 @@ class Progsum(dict):
                 expected_slot += 1
             expected_slot = slot+1
 
-
     def __hash__(self):
         return 0
+
 
 
 class LogProgstate(multiconsensus.Progstate):
@@ -131,3 +135,12 @@ class LogProgstate(multiconsensus.Progstate):
         ret = SlottedValue(self.next_slot, cmd)
         self.next_slot += 1
         return ret
+
+
+    # for testing
+    def contains(self, cmd):
+        for val in self.progsum.values():
+            if val.cmd == cmd:
+                return True
+
+        return False
