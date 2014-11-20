@@ -145,13 +145,12 @@ def test_many(nreps=3):
 
     assert check_replicas(replicas)
 
-def test_rand(nreps=3, runtime=10, seed=0, crash_freq=1, crash_skew=.5, client_freq=.1, timeout_freq=1):
+def test_rand(nreps=3, runtime=10, seed=0, crash_freq=.02, crash_skew=.5, client_freq=.01, timeout_freq=.02):
     replicas = gen_replicas(nreps)
     done = False
 
-    downreps = 0
-
     def crasher():
+        downreps = 0
         rand = random.Random(seed)
         while not done:
             time.sleep(crash_freq)
@@ -160,7 +159,7 @@ def test_rand(nreps=3, runtime=10, seed=0, crash_freq=1, crash_skew=.5, client_f
             if not crash and downreps == 0:
                 continue
             # we'll lose a majority if we crash another
-            if crash and downreps == nreps/2:
+            if crash and downreps >= nreps/2:
                 continue
             rep = rand.choice(replicas)
             rep.crashed = crash
@@ -193,7 +192,10 @@ def test_rand(nreps=3, runtime=10, seed=0, crash_freq=1, crash_skew=.5, client_f
 
     time.sleep(runtime)
     done = True
+    for rep in replicas:
+        rep.crashed = False
     time.sleep(2)
+    replicas[0].me.timeout()
 
     assert check_replicas(replicas)
 

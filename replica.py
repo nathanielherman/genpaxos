@@ -59,7 +59,6 @@ def check_appstate(replicas):
         print 'unexpected appstate:'
         print 'expected: ', expect
         print 'got: ', real
-        assert 0
         return False
     return True
 
@@ -76,12 +75,13 @@ def check_groups(replicas, same=None, grouper=log_groups):
 
 
 def check_replicas(replicas, same=None, master_committed=True, check_appstate_groups=False):
-    if not check_groups(replicas, same):
-        return False
+    ret = True
+    ret = ret and check_groups(replicas, same)
 
-    if master_committed and not check_appstate(replicas):
-        return False
-    if check_appstate_groups and not check_groups(replicas, same, appstate_groups):
-        return False
+    if master_committed:
+        ret = ret and check_appstate(replicas)
 
-    return True
+    if check_appstate_groups:
+        ret = ret and check_groups(replicas, same, appstate_groups)
+
+    return ret

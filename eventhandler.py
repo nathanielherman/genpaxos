@@ -7,14 +7,11 @@ class EventHandler(object):
     def __init__(self, consensus, network):
         self.consensus = consensus
         self.network = network
-        # TODO: maybe these should go inside consensus to get locking for free?
-        self.certifics = set()
-        self.snapshots = set()
-        nop = lambda item: False
+        nop_request = lambda item: False
         self.handler_map = {'client': self.client_request,
                             'certify': self.certify_request, 'certifyResponse': self.certify_response,
                             'snapshot': self.snapshot_request, 'supportRound': self.supportRound_request, 
-                            'decide': self.decide_request, 'nop': nop}
+                            'decide': self.decide_request, 'nop': nop_request}
 
     def request(self, (msg, item)):
         resp = self.handler_map[msg](item)
@@ -40,8 +37,8 @@ class EventHandler(object):
 
     def certify_response(self, (cert, rid, value)):
         if self.consensus.isSeq:
-            self.certifics.add((cert, rid, value))
-            decide_resp = self.consensus.observeDecision(value, self.certifics)
+            self.consensus.add_certific((cert, rid, value))
+            decide_resp = self.consensus.observeDecision(value)
             client_resps = self.consensus.tryUpdates()
             if client_resps:
                 print 'command result(s): ', client_resps
@@ -56,9 +53,9 @@ class EventHandler(object):
 
     def snapshot_request(self, item):
         (cert, rid, proseq, state) = item
-        self.snapshots.add(item)
+        self.consensus.add_snapshot(item)
         isseq = self.consensus.isSeq
-        msgs = self.consensus.recover(rid, self.snapshots)
+        msgs = self.consensus.recover(rid)
         ret = False
         if isseq == False and self.consensus.isSeq:
             print self.consensus.cert, ' became master'

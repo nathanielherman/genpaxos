@@ -47,6 +47,15 @@ class MultiConsensus(ActiveRep):
         self.proseq = -1
         self.cert = cert
         self.n = n
+        self.certifics = set()
+        self.snapshots = set()
+
+    @protected
+    def add_certific(self, item):
+        self.certifics.add(item)
+    @protected
+    def add_snapshot(self, item):
+        self.snapshots.add(item)
 
     @protected
     @precondition(lambda self, rid, proseq: rid > self.rid)
@@ -76,10 +85,10 @@ class MultiConsensus(ActiveRep):
     # network precondition: S is a subset of snapshot messages received and
     # only includes messages matching our rid and with us as proseq
     @protected
-    @precondition(lambda self, rid, snapshots: self.rid == rid and not self.isSeq and \
-                  len(self._supporters(rid, self.cert, snapshots)) > self.n/2)
-    def recover(self, rid, snapshots):
-        support = self._supporters(rid, self.cert, snapshots)
+    @precondition(lambda self, rid: self.rid == rid and not self.isSeq and \
+                  len(self._supporters(rid, self.cert, self.snapshots)) > self.n/2)
+    def recover(self, rid):
+        support = self._supporters(rid, self.cert, self.snapshots)
         consolidated = reduce(lambda ps1, ps2: ps1.consolidate(ps2), support)
         self.progstate = self.progstate.set(consolidated, self.rid)
         # this can only happen AFTER we set progstate!!
@@ -125,10 +134,10 @@ class MultiConsensus(ActiveRep):
     # from a majority, OR we're a follower and the master told us a majority
     # had certified the command
     @protected
-    @precondition(lambda self, value, certifics=None, leaderDecided=False: 
+    @precondition(lambda self, value, leaderDecided=False: 
                   leaderDecided or 
-                  (certifics and self._roundSupport(certifics, value) > self.n/2))
-    def observeDecision(self, value, certifics=None, leaderDecided=False):
+                  (self._roundSupport(self.certifics, value) > self.n/2))
+    def observeDecision(self, value, leaderDecided=False):
         self.progstate.learn(value)
         if self.isSeq:
             return ('decide', (value))
