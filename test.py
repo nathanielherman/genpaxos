@@ -145,7 +145,7 @@ def test_many(nreps=3):
 
     assert check_replicas(replicas)
 
-def test_rand(nreps=101, runtime=10, seed=0, crash_freq=.1, crash_skew=.5, client_freq=.01, timeout_freq=.1):
+def test_rand(nreps=3, runtime=10, seed=0, crash_freq=.1, crash_skew=.5, client_freq=.01, timeout_freq=.1):
     replicas = gen_replicas(nreps)
     done = False
 
@@ -191,15 +191,21 @@ def test_rand(nreps=101, runtime=10, seed=0, crash_freq=.1, crash_skew=.5, clien
     go(client)
     go(crasher)
     go(timeout)
+    go(lambda: timeout(1))
 
     time.sleep(runtime)
     done = True
-#    for rep in replicas:
-#        rep.crashed = False
     time.sleep(2)
+    for rep in replicas:
+        rep.crashed = False
+    replicas[0].me.timeout()
+    replicas[0].me.timeout()
+    replicas[0].me.timeout()
+    replicas[0].me.timeout()
     replicas[0].me.timeout()
 
     assert check_appstate(replicas)
+    assert check_replicas(replicas)
 
     print_replicas(replicas)
 
