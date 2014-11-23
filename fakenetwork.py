@@ -13,7 +13,10 @@ class FakeNetwork(object):
         # TODO: we're sending to ourselves here (should turn into a no op)
         resps = map(lambda n: (n, self.send(n, msg, item)), replicas)
         retries = 0
-        while len(resps) and retries < 2:
+        # not super ideal but basically this means that we'll try
+        # each replica at least 3 times before giving up
+        max_retries = len(replicas)*2+1
+        while len(resps) and retries < max_retries:
             node, future = resps.pop(0)
             resp = future.result()
 #            if self.me.consensus.cert == node:

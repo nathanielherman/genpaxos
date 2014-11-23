@@ -54,12 +54,8 @@ class EventHandler(object):
     def snapshot_request(self, item):
         (cert, rid, proseq, state) = item
         self.consensus.add_snapshot(item)
-        isseq = self.consensus.isSeq
         msgs = self.consensus.recover(rid)
         ret = False
-        if isseq == False and self.consensus.isSeq:
-            print self.consensus.cert, ' became master'
-            ret = True
         if msgs:
             for m in msgs:
                 self.network.sendAll(m, self.response)
