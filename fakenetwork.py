@@ -27,11 +27,13 @@ class FakeNetwork(object):
                 # they don't need these to be sent anymore (or, possibly,
                 # we could continue sending in the background)
                 if callback(resp):
-                    return
+                    return True
             else:
                 # keep trying
                 resps.append((node, self.send(node, msg, item)))
                 retries += 1
+        return False
+        
 
     def receive(self, msg, item):
         print 'node ', self.me.consensus.cert, ' received ', msg, item

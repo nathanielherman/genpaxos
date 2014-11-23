@@ -147,6 +147,7 @@ def test_many(nreps=3):
 
 def test_rand(nreps=3, runtime=10, seed=0, crash_freq=.1, crash_skew=.5, client_freq=.01, timeout_freq=.1):
     replicas = gen_replicas(nreps)
+    successes = []
     done = False
 
     def crasher():
@@ -177,7 +178,10 @@ def test_rand(nreps=3, runtime=10, seed=0, crash_freq=.1, crash_skew=.5, client_
             if not r:
                 continue
             c = '%d,%d' % (id, i)
-            r.me.request(('client', appstate.Cmd(c)))
+            # TODO: get actual response
+            msg, success = r.me.request(('client', appstate.Cmd(c)))
+            if msg == 'clientResponse' and success:
+                successes.append(appstate.Cmd(c))
             i += 1
 
     def timeout(id=0):
@@ -206,6 +210,10 @@ def test_rand(nreps=3, runtime=10, seed=0, crash_freq=.1, crash_skew=.5, client_
 
     assert check_appstate(replicas)
     assert check_replicas(replicas)
+
+    print successes
+    for cmd in successes:
+        assert replicas[0].me.consensus.progstate.appState.contains(cmd)
 
     print_replicas(replicas)
 

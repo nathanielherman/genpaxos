@@ -16,7 +16,7 @@ class EventHandler(object):
     def request(self, (msg, item)):
         resp = self.handler_map[msg](item)
         if not resp:
-            resp = ('nop', 1)
+            resp = ('nop', self.consensus.cert)
         return resp
 
     def response(self, (msg, item)):
@@ -33,7 +33,10 @@ class EventHandler(object):
             # TODO: haven't totally decided whether we should certify our own commands by going through sendAll
             # like this or just doing it sorta manually. this way seems cleaner for the most part but is less efficient
             # technically
-            self.network.sendAll(send, self.response)
+            success = self.network.sendAll(send, self.response)
+            # TODO: send back actual response
+            return ('clientResponse', success)
+        return ('clientResponse', False)
 
     def certify_response(self, (cert, rid, value)):
         if self.consensus.isSeq:

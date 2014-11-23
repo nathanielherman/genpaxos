@@ -34,3 +34,6 @@ class LogDB(object):
             self.log.append(cmd)
 
         return 'Success-' + repr(cmd)
+
+    def contains(self, cmd):
+        return cmd in self.log
