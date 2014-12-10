@@ -37,3 +37,6 @@ class LogDB(object):
 
     def contains(self, cmd):
         return cmd in self.log
+    
+    def snapshot(self):
+        return self
