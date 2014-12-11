@@ -46,8 +46,10 @@ def find_master(replicas):
 def expected_appstate(replicas):
     r = find_master(replicas)
     log = r.me.consensus.progstate.progsum
-    max_entry = max(log.keys())
     expectedAS = appstate.LogDB()
+    if len(log.keys()) == 0:
+        return expectedAS
+    max_entry = max(log.keys())
     for i in xrange(max_entry+1):
         if log[i].cmd.empty():
             continue
@@ -57,7 +59,7 @@ def expected_appstate(replicas):
 def check_appstate(replicas):
     expect = expected_appstate(replicas)
     real = find_master(replicas).me.consensus.progstate.appState
-    if not (real == expect):
+    if not (real.contains(expect)):
         logger.log(logger.Error, 'unexpected appstate:')
         logger.log(logger.Error, 'expected: ', expect)
         logger.log(logger.Error, 'got: ', real)
@@ -87,3 +89,7 @@ def check_replicas(replicas, same=None, master_committed=True, check_appstate_gr
         ret = ret and check_groups(replicas, same, appstate_groups)
 
     return ret
+
+def take_snapshots(replicas):
+    for r in replicas:
+        r.me.take_snapshot()

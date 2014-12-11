@@ -81,6 +81,9 @@ class EventHandler(object):
     def updateAppState_request(self, (rid, newAS)):
         self.consensus.updateAppState(rid, newAS)
 
+    def take_snapshot(self):
+        self.consensus.progstate.take_snapshot()
+
     def timeout(self):
         cur = self.consensus.rid >> 8
         new_rid = ((cur+1) << 8) | self.consensus.cert

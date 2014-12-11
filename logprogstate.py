@@ -79,6 +79,13 @@ class LogProgstate(multiconsensus.Progstate):
             % (repr(self.appState), self.version, repr(self.progsum), \
                    repr(self.learned))
 
+    def truncate(self, til_slot):
+        self.progsum.truncate(til_slot)
+        for slot in sorted(self.learned.keys()):
+            if slot >= til_slot:
+                break
+            del self.learned[slot]
+
     def set(self, new_progsum, rid):
         new_progsum.updateRid(rid)
         # fill in gaps with no ops
@@ -104,7 +111,8 @@ class LogProgstate(multiconsensus.Progstate):
         # we actually do allow recertifying commands (this 
         # should be effectively the same as our certify message getting
         # duplicated)
-        return rid >= self.progsum[value.slot].rid and value.slot > self.version
+        logger.log(logger.Debug, 'shouldcert', rid, value, self.version)
+        return rid >= self.progsum[value.slot].rid and value.slot >= self.version
 
     def certify(self, rid, value):
        self.progsum[value.slot] = RidCmd(rid, value.cmd)
@@ -141,6 +149,7 @@ class LogProgstate(multiconsensus.Progstate):
     # ehhh
     def full_value(self, cmd):
         # in case we weren't the master, etc, etc.
+        self.next_slot = max(self.next_slot, self.version)
         while not self.progsum[self.next_slot].cmd.empty():
             self.next_slot += 1
         ret = SlottedValue(self.next_slot, cmd)

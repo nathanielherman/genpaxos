@@ -7,7 +7,7 @@ class Logger(object):
     level = Debug
     def log(self, level, *args, **kwargs):
         if level >= self.level:
-            s = '\n'.join([str(a) for a in args])
+            s = ' '.join([str(a) for a in args])
             print s
 
 default_logger = Logger()

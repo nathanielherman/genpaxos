@@ -1,3 +1,5 @@
+import copy
+
 class Cmd(object):
     def __init__(self, s=None):
         self.s = s
@@ -36,7 +38,9 @@ class LogDB(object):
         return 'Success-' + repr(cmd)
 
     def contains(self, cmd):
+        if isinstance(cmd, LogDB):
+            return all([self.contains(c) for c in cmd.log])
         return cmd in self.log
     
-    def snapshot(self):
-        return self
+    def snapshot(self, slot):
+        return copy.deepcopy(self)
