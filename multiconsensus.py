@@ -140,6 +140,9 @@ class MultiConsensus(ActiveRep):
                   leaderDecided or 
                   (self._roundSupport(self.certifics, value) > self.n/2))
     def observeDecision(self, value, leaderDecided=False):
+        # somewhat half-baked optimization: remove certifics messages for the thing we just decided
+        self.certifics = set([c for c in self.certifics if c[2] != value])
+
         self.progstate.learn(value)
         if self.isSeq:
             return ('decide', (value))
