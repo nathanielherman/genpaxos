@@ -12,7 +12,9 @@ class EventHandler(object):
         self.handler_map = {'client': self.client_request,
                             'certify': self.certify_request, 'certifyResponse': self.certify_response,
                             'snapshot': self.snapshot_request, 'supportRound': self.supportRound_request, 
-                            'decide': self.decide_request, 'nop': nop_request}
+                            'decide': self.decide_request, 
+                            'updateAppState': self.updateAppState_request,
+                            'nop': nop_request}
 
     def request(self, (msg, item)):
         resp = self.handler_map[msg](item)
@@ -61,6 +63,8 @@ class EventHandler(object):
         msgs = self.consensus.recover(rid)
         ret = False
         if msgs:
+            # TODO: we should make this more general s.t.
+            # msg can be a list of msgs OR just one
             for m in msgs:
                 self.network.sendAll(m, self.response)
             ret = True
@@ -73,6 +77,9 @@ class EventHandler(object):
     def supportRound_request(self, (rid, proseq)):
         resp = self.consensus.supportRound(rid, proseq)
         return resp
+
+    def updateAppState_request(self, (rid, newAS)):
+        self.consensus.updateAppState(rid, newAS)
 
     def timeout(self):
         cur = self.consensus.rid >> 8

@@ -96,9 +96,8 @@ class MultiConsensus(ActiveRep):
         self.isSeq = True
         
         cert_vals = self.progstate.cert_values()
-        # TODO: maybe what we really want is for this to call certifySeq?
-        # what we really really want is to figure out something more sensible than just resending everything
-        return [('certify', (self.cert, self.rid, v)) for v in cert_vals]
+        return [('updateAppState', (self.rid, self.progstate.sendable()))] + \
+            [('certify', (self.cert, self.rid, v)) for v in cert_vals]
 
     @protected
     @precondition(lambda self, rid, value: self.isSeq and rid == self.rid \
@@ -110,6 +109,11 @@ class MultiConsensus(ActiveRep):
         # we don't currently actually certify here, though we could
         # instead we let the network implicitly do it (unclear which is really better)
         return ('certify', (self.cert, rid, value))
+
+    @protected
+    @precondition(lambda self, rid, newAppState: self.rid == rid)
+    def updateAppState(self, rid, newAppState):
+        self.progstate.updateAppState(newAppState, rid)
 
     # network precondition: someone else has certified this command
     @protected
@@ -147,7 +151,7 @@ class MultiConsensus(ActiveRep):
         if self.isSeq:
             return ('decide', (value))
 
-class Progstate:
+class Progstate(object):
     def consolidate(self, progstate2):
         pass
     def set(self, new_progstate):

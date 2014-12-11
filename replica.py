@@ -3,12 +3,13 @@ import multiconsensus
 import fakenetwork
 import fakenetworkdebug
 import logprogstate
+import fullprogstate
 import eventhandler
 import appstate
 import logger
 
 def make_replica(i, N, start_master=-1):
-    progstate = logprogstate.LogProgstate(appstate.LogDB())
+    progstate = fullprogstate.FullProgstate(appstate.LogDB())
     init_rid = (1<<8 | start_master) if start_master >= 0 else 0
     consensus = multiconsensus.MultiConsensus(i, progstate,
                                               init_rid, N)

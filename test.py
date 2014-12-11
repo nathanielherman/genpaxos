@@ -227,16 +227,9 @@ def test_throughput(nreps=N, nrequests=1000):
         msg, success = master.me.request(('client', appstate.Cmd(i)))
 
 def main():
-    logger.level = logger.Nothing
-    test_throughput()
-    exit(0)
-    return
 
-    test_rand()
-    return
-
-    test_many()
-    time.sleep(1)
+#    test_many()
+#    time.sleep(1)
     test_notleader()
     time.sleep(1)
     test_gap()

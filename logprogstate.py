@@ -33,10 +33,18 @@ class Progsum(dict):
     def consolidate(self, ps2):
         ret = copy.copy(self)
         for slot, val in ps2.iteritems():
+            #TODO: this is literally certify()
+            # how can we cleanly cut this duplication??
             if val.rid > ret[slot].rid:
                 ret[slot] = val
         return ret
-    
+
+    def truncate(self, til_slot):
+        for slot in sorted(self.keys()):
+            if slot >= til_slot:
+                break
+            del self[slot]
+
     def updateRid(self, rid):
         def upd(slot):
             self[slot].rid = rid
@@ -78,6 +86,9 @@ class LogProgstate(multiconsensus.Progstate):
         self.progsum = new_progsum
         return self
 
+    def updateAppState(self, newAS, rid):
+        self.progsum = self.progsum.consolidate(newAS)
+
     def seq_certifiable(self, rid, value):
         return True
         # TODO: is this actually sufficient
@@ -93,7 +104,7 @@ class LogProgstate(multiconsensus.Progstate):
         # we actually do allow recertifying commands (this 
         # should be effectively the same as our certify message getting
         # duplicated)
-        return rid >= self.progsum[value.slot].rid
+        return rid >= self.progsum[value.slot].rid and value.slot > self.version
 
     def certify(self, rid, value):
        self.progsum[value.slot] = RidCmd(rid, value.cmd)
