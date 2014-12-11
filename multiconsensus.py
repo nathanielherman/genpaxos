@@ -1,5 +1,6 @@
 from collections import defaultdict
 from conditions import precondition
+import logger
 
 import threading
 
@@ -104,7 +105,7 @@ class MultiConsensus(ActiveRep):
                  #and value in inputs
                  and self.progstate.seq_certifiable(rid, value))
     def certifySeq(self, rid, value):
-        print 'certseq'
+        logger.log(logger.Debug, 'certseq')
         value = self.progstate.full_value(value)
         # we don't currently actually certify here, though we could
         # instead we let the network implicitly do it (unclear which is really better)
@@ -116,7 +117,7 @@ class MultiConsensus(ActiveRep):
                   self.rid == rid and self.progstate.certifiable(rid, value))
     def certify(self, rid, value):
         self.progstate.certify(rid, value)
-        print 'certify'
+        logger.log(logger.Debug, 'certify')
         return ('certifyResponse', (self.cert, rid, value))
 #        self.certifics_chan.put((self.cert, rid, value))
 

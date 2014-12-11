@@ -5,6 +5,7 @@ import fakenetworkdebug
 import logprogstate
 import eventhandler
 import appstate
+import logger
 
 def make_replica(i, N, start_master=-1):
     progstate = logprogstate.LogProgstate(appstate.LogDB())
@@ -22,7 +23,7 @@ def make_replica(i, N, start_master=-1):
     return net
 
 def print_replica(replica):
-    print replica.me.consensus.progstate
+    logger.log(logger.Info, replica.me.consensus.progstate)
 
 def rgroups(replicas, f):
     d = defaultdict(lambda: set())
@@ -56,9 +57,9 @@ def check_appstate(replicas):
     expect = expected_appstate(replicas)
     real = find_master(replicas).me.consensus.progstate.appState
     if not (real == expect):
-        print 'unexpected appstate:'
-        print 'expected: ', expect
-        print 'got: ', real
+        logger.log(logger.Error, 'unexpected appstate:')
+        logger.log(logger.Error, 'expected: ', expect)
+        logger.log(logger.Error, 'got: ', real)
         return False
     return True
 
@@ -68,8 +69,8 @@ def check_groups(replicas, same=None, grouper=log_groups):
     lg = grouper(replicas)
     for group in same:
         if not any([set(group).issubset(g) for g in lg.values()]):
-            print 'unexpected groupings:'
-            print lg
+            logger.log(logger.Error, 'unexpected groupings:')
+            logger.log(logger.Error, lg)
             return False
     return True
 

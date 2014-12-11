@@ -1,6 +1,7 @@
 import threading
 import time
 import Queue
+import logger
 from multiconsensus import *
 
 class EventHandler(object):
@@ -26,7 +27,7 @@ class EventHandler(object):
         return resp
 
     def client_request(self, cmd):
-        print 'run', cmd
+        logger.log(logger.Debug, 'run', cmd)
         # TODO: if not master, respond to client telling them who is
         send = self.consensus.certifySeq(self.consensus.rid, cmd)
         if send:
@@ -44,14 +45,14 @@ class EventHandler(object):
             decide_resp = self.consensus.observeDecision(value)
             client_resps = self.consensus.tryUpdates()
             if client_resps:
-                print 'command result(s): ', client_resps
+                logger.log(logger.Debug, 'command result(s): ', client_resps)
             if decide_resp:
                 self.network.sendAll(decide_resp, lambda item: True)
                 return True
 
     def certify_request(self, (cert, rid, value)):
         resp = self.consensus.certify(rid, value)
-        print 'cert_resp', resp
+        logger.log(logger.Debug, 'cert_resp', resp)
         return resp
 
     def snapshot_request(self, item):

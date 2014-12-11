@@ -1,7 +1,7 @@
 from collections import defaultdict
 import copy
 import multiconsensus
-
+import logger
 
 class RidCmd:
     def __init__(self, rid, cmd):
@@ -81,13 +81,13 @@ class LogProgstate(multiconsensus.Progstate):
     def seq_certifiable(self, rid, value):
         return True
         # TODO: is this actually sufficient
-        print 'seq_cert %d %s %s' % (value, repr(self.progsum[value.slot].cmd), 
-                                     repr(self.progsum[value.slot - 1].cmd))
+        logger.log(logger.Debug, 'seq_cert %d %s %s' % (value, repr(self.progsum[value.slot].cmd),
+                                     repr(self.progsum[value.slot - 1].cmd)))
         return self.progsum[value.slot].cmd.empty() and \
             (value.slot == 0 or not self.progsum[value.slot - 1].cmd.empty())
 
     def certifiable(self, rid, value):
-        print 'certifiable', rid >= self.progsum[value.slot].rid
+        logger.log(logger.Debug, 'certifiable', rid >= self.progsum[value.slot].rid)
         if rid == self.progsum[value.slot].rid:
             assert value.cmd == self.progsum[value.slot].cmd
         # we actually do allow recertifying commands (this 

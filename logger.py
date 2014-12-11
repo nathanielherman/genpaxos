@@ -1,11 +1,18 @@
 Debug = 0
 Info = 1
 Error = 2
+Nothing = 3
+level = Debug
 class Logger(object):
-    self.level = Debug
-    def debug(self, level, *args, **kwargs):
+    level = Debug
+    def log(self, level, *args, **kwargs):
         if level >= self.level:
             s = '\n'.join([repr(a) for a in args])
             print s
 
-logger = Logger()
+default_logger = Logger()
+
+def log(lvl, *args, **kwargs):
+    default_logger.level = level
+    default_logger.log(lvl, *args, **kwargs)
+

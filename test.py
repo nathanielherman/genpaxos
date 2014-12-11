@@ -14,6 +14,7 @@ import eventhandler
 import appstate
 from replica import *
 import Queue
+import logger
 
 N = 3
 START_MASTER = -1
@@ -211,23 +212,24 @@ def test_rand(nreps=3, runtime=10, seed=0, crash_freq=.1, crash_skew=.5, client_
     assert check_appstate(replicas)
     assert check_replicas(replicas)
 
-    print successes
+    logger.log(logger.Debug, successes)
     for cmd in successes:
         assert replicas[0].me.consensus.progstate.appState.contains(cmd)
 
     print_replicas(replicas)
 
-def test_throughput(nreps=N, nrequests=10000):
+def test_throughput(nreps=N, nrequests=1000):
     replicas = gen_replicas(nreps)
     replicas[0].me.timeout()
 
     master = replicas[0]
     for i in xrange(nrequests):
         msg, success = master.me.request(('client', appstate.Cmd(i)))
-        assert msg == 'clientResponse' and success
 
 def main():
+    logger.level = logger.Nothing
     test_throughput()
+    exit(0)
     return
 
     test_rand()
@@ -255,7 +257,7 @@ def main():
     replicas[1].me.client_request(appstate.Cmd("baz"))
 
     for r in replicas:
-        print r.me.consensus.progstate
+        logger.log(logger.Info, r.me.consensus.progstate)
 #    replicas[2].me.timeout()
 
 

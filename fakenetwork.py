@@ -1,3 +1,4 @@
+import logger
 from future import Future
 
 class FakeNetwork(object):
@@ -20,10 +21,10 @@ class FakeNetwork(object):
             node, future = resps.pop(0)
             resp = future.result()
 #            if self.me.consensus.cert == node:
- #               print 'callback', callback(resp)
+ #               logger.log('callback', callback(resp))
   #              continue
             if resp:
-                print 'node', self.me.consensus.cert, 'got response', resp
+                logger.log(logger.Debug, 'node', self.me.consensus.cert, 'got response', resp)
                 # they don't need these to be sent anymore (or, possibly,
                 # we could continue sending in the background)
                 if callback(resp):
@@ -36,15 +37,15 @@ class FakeNetwork(object):
         
 
     def receive(self, msg, item):
-        print 'node ', self.me.consensus.cert, ' received ', msg, item
+        logger.log(logger.Debug, 'node ', self.me.consensus.cert, ' received ', msg, item)
         resp = self.me.request((msg, item))
         return resp
 
     # send does an actual network "send"
     def send(self, node, msg, item):
-        print 'node ', self.me.consensus.cert, ' send to ', node, msg, item
+        logger.log(logger.Debug, 'node ', self.me.consensus.cert, ' send to ', node, msg, item)
         # our fake network calls a node's network.receive() directly
         # retry if returns None?
         # how distinguish network failure and a replica saying fuck off
-        print 'crashed', self.config[node].crashed
+        logger.log(logger.Debug, 'crashed', self.config[node].crashed)
         return Future(False, self.config[node].receive, msg, item)
