@@ -217,8 +217,18 @@ def test_rand(nreps=3, runtime=10, seed=0, crash_freq=.1, crash_skew=.5, client_
 
     print_replicas(replicas)
 
+def test_throughput(nreps=N, nrequests=10000):
+    replicas = gen_replicas(nreps)
+    replicas[0].me.timeout()
+
+    master = replicas[0]
+    for i in xrange(nrequests):
+        msg, success = master.me.request(('client', appstate.Cmd(i)))
+        assert msg == 'clientResponse' and success
+
 def main():
-    replicas = gen_replicas(N)
+    test_throughput()
+    return
 
     test_rand()
     return
@@ -233,6 +243,8 @@ def main():
     time.sleep(1)
     test_mismatchedlogs()
     return
+
+    replicas = gen_replicas(N)
 
     replicas[0].me.timeout()
     replicas[0].me.client_request(appstate.Cmd("bar"))

@@ -96,6 +96,7 @@ class MultiConsensus(ActiveRep):
         
         cert_vals = self.progstate.cert_values()
         # TODO: maybe what we really want is for this to call certifySeq?
+        # what we really really want is to figure out something more sensible than just resending everything
         return [('certify', (self.cert, self.rid, v)) for v in cert_vals]
 
     @protected
